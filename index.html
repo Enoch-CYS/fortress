@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#9ED8FF">
+  <title>수학 포트리스</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 게임 화면 (하늘·땅·탱크·포탄) -->
+    <canvas id="game-canvas" aria-label="게임 화면"></canvas>
+
+    <!-- 차례인 선수 색으로 빛나는 테두리 -->
+    <div id="turn-glow" class="hidden"></div>
+
+    <!-- 위쪽 정보판 -->
+    <div id="hud-top" class="hidden">
+      <div class="pinfo" id="pinfo-0">
+        <span class="picon round" id="picon-0"></span>
+        <div class="pmeta">
+          <div class="pname" id="pname-0"></div>
+          <div class="hpwrap">
+            <div class="hpbar"><div class="hpfill" id="hpfill-0"></div><span class="hpflag" title="여기까지 내려가면 끝"></span></div>
+            <span class="hpnum" id="hpnum-0"></span>
+          </div>
+        </div>
+      </div>
+      <div id="turn-pill"><span id="turn-text"></span><span id="shot-count"></span></div>
+      <div class="pinfo right" id="pinfo-1">
+        <div class="pmeta">
+          <div class="pname" id="pname-1"></div>
+          <div class="hpwrap">
+            <div class="hpbar"><div class="hpfill" id="hpfill-1"></div><span class="hpflag" title="여기까지 내려가면 끝"></span></div>
+            <span class="hpnum" id="hpnum-1"></span>
+          </div>
+        </div>
+        <span class="picon tri" id="picon-1"></span>
+      </div>
+      <div class="corner-space"></div>
+    </div>
+
+    <!-- 오른쪽 위 버튼: 멈춤, 소리 -->
+    <div id="corner-buttons">
+      <button id="btn-pause" class="btn small hidden" aria-label="잠깐 멈춤"><span class="pause-icon"><i></i><i></i></span></button>
+      <button id="btn-sound" class="btn small" aria-label="소리 켜기/끄기"></button>
+    </div>
+
+    <!-- 조준 숫자 (쏘는 탱크 쪽 위 구석, 배경 없이 글씨만) -->
+    <div id="aim-readout" class="hidden"></div>
+
+    <!-- 발사 결과 말풍선 -->
+    <div id="message" class="hidden"><div id="msg-main"></div><div id="msg-sub"></div></div>
+
+    <!-- "○○ 차례예요!" -->
+    <div id="turn-banner" class="hidden"></div>
+
+    <!-- 아래 조작판 -->
+    <div id="panel" class="hidden">
+      <div class="move-group">
+        <button id="btn-left" class="btn move" aria-label="왼쪽으로">◀</button>
+        <button id="btn-right" class="btn move" aria-label="오른쪽으로">▶</button>
+        <div class="steps-box"><div class="steps-label">걸음</div><div id="steps"></div></div>
+      </div>
+      <div id="panel-hint"></div>
+      <button id="btn-fire" class="btn fire">발사!</button>
+    </div>
+
+    <!-- ① 시작 화면 -->
+    <div id="screen-start" class="screen">
+      <div class="start-inner">
+        <h1 class="title">수학 포트리스</h1>
+        <!-- 상대 고르기 -->
+        <div class="opp-select" id="opp-select">
+          <button class="btn opp" data-opp="human">사람과 함께</button>
+          <button class="btn opp" data-opp="robo">Robo와 겨루기</button>
+        </div>
+        <div class="cards">
+          <div class="card" id="card-0">
+            <div class="card-head"><span class="picon round small-icon" id="start-icon-0"></span>1번 선수</div>
+            <div class="row">
+              <canvas class="preview" id="preview-0" width="96" height="64"></canvas>
+              <div class="names" id="names-0"></div>
+            </div>
+            <div class="row colors" id="colors-0"></div>
+            <div class="row modes" id="modes-0">
+              <button class="btn mode" data-mode="sprout">새싹<small>1~10 · 넓게 맞아요</small></button>
+              <button class="btn mode" data-mode="challenge">도전<small>각도 0~90°</small></button>
+            </div>
+            <div class="mode-note" id="mode-note-0"></div>
+          </div>
+          <div class="card" id="card-1">
+            <div class="card-head"><span class="picon tri small-icon" id="start-icon-1"></span><span id="card-head-1">2번 선수</span></div>
+            <div class="row">
+              <canvas class="preview" id="preview-1" width="96" height="64"></canvas>
+              <div class="names" id="names-1"></div>
+              <div class="robo-tag hidden" id="robo-tag">Robo</div>
+            </div>
+            <div class="row colors" id="colors-1"></div>
+            <div class="row modes" id="modes-1">
+              <button class="btn mode" data-mode="sprout">새싹<small>1~10 · 넓게 맞아요</small></button>
+              <button class="btn mode" data-mode="challenge">도전<small>각도 0~90°</small></button>
+            </div>
+            <div class="mode-note" id="mode-note-1"></div>
+          </div>
+        </div>
+        <button id="btn-start" class="btn fire start">시작하기 ▶</button>
+        <p class="howto">화면을 끌어 당기면 <b>당긴 반대쪽</b>으로 조준돼요. 손을 떼도 쏘지 않아요. <b>발사!</b> 버튼으로 쏘아요.</p>
+      </div>
+    </div>
+
+    <!-- ②-b 잠깐 멈춤 -->
+    <div id="screen-pause" class="screen overlay hidden">
+      <div class="pause-box">
+        <div class="pause-title">잠깐 쉬어요</div>
+        <button id="btn-resume" class="btn big">계속하기</button>
+        <button id="btn-home-pause" class="btn big">처음으로</button>
+      </div>
+    </div>
+
+    <!-- ③ 결과 화면 -->
+    <div id="screen-result" class="screen overlay-light hidden">
+      <div class="result-inner">
+        <div id="result-title"></div>
+        <div class="result-cards">
+          <div class="rcard" id="rcard-0"></div>
+          <div class="rcard" id="rcard-1"></div>
+        </div>
+        <div class="result-buttons">
+          <button id="btn-again" class="btn big fire">다시 하기</button>
+          <button id="btn-home" class="btn big">처음으로</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 세로 화면 안내 -->
+    <div id="rotate-notice">
+      <div class="rotate-tank"><div class="rt-dome"></div><div class="rt-body"></div><div class="rt-tread"></div></div>
+      <p>휴대폰을 옆으로 눕혀 주세요</p>
+      <p class="small">가로 화면에서 더 넓게 즐길 수 있어요</p>
+    </div>
+  </div>
+
+  <!-- 순서대로 불러옵니다 (빌드 도구 없음) -->
+  <script src="js/config.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/terrain.js"></script>
+  <script src="js/robo.js"></script>
+  <script src="js/feedback.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
